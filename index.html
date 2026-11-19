@@ -1,0 +1,2679 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Balapan Ayam — Kuis Edukasi Fiqih Kelas 7</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Fredoka (playful display) & Plus Jakarta Sans (clean UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- PeerJS (WebRTC) via CDN -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+  <!-- QRCode generator via CDN (with canvas/SVG fallback) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Fredoka', 'sans-serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            barn: {
+              dark: '#14261c',
+              green: '#1e462e',
+              grass: '#2d7a46',
+              turf: '#3ea055',
+              sand: '#fdf6e7',
+              cream: '#fffdf9',
+              amber: '#f59e0b',
+              coral: '#ef4444',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* =========================================================================
+       CUSTOM ANIMATIONS & TRACK STYLING
+       ========================================================================= */
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f3f7f2;
+      color: #132218;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, .font-display {
+      font-family: 'Fredoka', sans-serif;
+    }
+
+    /* Tactile 3D game buttons */
+    .btn-3d {
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.15s ease;
+    }
+    .btn-3d:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25) !important;
+    }
+    .btn-3d:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Chicken hop animation when answering correctly */
+    @keyframes chickenHop {
+      0%   { transform: translateY(0) scale(1) rotate(0deg); }
+      25%  { transform: translateY(-18px) scale(1.15) rotate(-8deg); }
+      50%  { transform: translateY(-4px) scale(1.05) rotate(6deg); }
+      75%  { transform: translateY(-11px) scale(1.1) rotate(-4deg); }
+      100% { transform: translateY(0) scale(1) rotate(0deg); }
+    }
+    .animate-chicken-hop {
+      animation: chickenHop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Gentle idle bobbing for live chickens */
+    @keyframes chickenIdle {
+      0%, 100% { transform: translateY(0px); }
+      50%      { transform: translateY(-3px); }
+    }
+    .animate-chicken-idle {
+      animation: chickenIdle 1.6s ease-in-out infinite;
+    }
+
+    /* Shake animation for wrong answer */
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .animate-wrong-shake {
+      animation: wrongShake 0.4s ease-in-out;
+    }
+
+    /* Checkered finish line pattern */
+    .finish-line-pattern {
+      background-image:
+        linear-gradient(45deg, #111827 25%, transparent 25%),
+        linear-gradient(-45deg, #111827 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #111827 75%),
+        linear-gradient(-45deg, transparent 75%, #111827 75%);
+      background-size: 14px 14px;
+      background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+    }
+
+    /* Grass stripes on race track */
+    .grass-lane {
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.04) 0px,
+        rgba(255, 255, 255, 0.04) 24px,
+        rgba(0, 0, 0, 0.04) 24px,
+        rgba(0, 0, 0, 0.04) 48px
+      );
+    }
+
+    /* Confetti falling animation */
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(-10vh) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(105vh) rotate(720deg);
+        opacity: 0.85;
+      }
+    }
+    .confetti-piece {
+      position: fixed;
+      top: -20px;
+      z-index: 60;
+      pointer-events: none;
+      animation: confettiFall linear forwards;
+    }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #e6efe4;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #8fb899;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #5f966e;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-300 selection:text-stone-900">
+
+  <!-- =========================================================================
+       PENGATURAN UTAMA GAME (KONFIGURASI DI BAGIAN ATAS KODE)
+       ========================================================================= -->
+  <script>
+    const QUESTION_INTERVAL = 10000; // Durasi tiap pertanyaan (ms) -> 10.000 ms = 10 detik
+    const TRACK_LENGTH = 15;         // Jumlah langkah menuju garis finish
+    const MAX_PLAYERS = 40;          // Kapasitas maksimal siswa dalam satu ruangan
+    const ROOM_PREFIX = "AYAMFIQIH_"; // Prefix Peer ID agar unik & tidak mudah bertabrakan di server PeerJS publik
+
+    // Palet warna ayam yang berbeda-beda dan ceria untuk tiap siswa
+    const CHICKEN_PALETTES = [
+      { body: "#f97316", wing: "#ea580c", comb: "#dc2626", name: "Oranye" },
+      { body: "#3b82f6", wing: "#2563eb", comb: "#f43f5e", name: "Biru" },
+      { body: "#ec4899", wing: "#db2777", comb: "#e11d48", name: "Merah Muda" },
+      { body: "#eab308", wing: "#ca8a04", comb: "#dc2626", name: "Kuning Emas" },
+      { body: "#8b5cf6", wing: "#7c3aed", comb: "#ef4444", name: "Ungu" },
+      { body: "#14b8a6", wing: "#0d9488", comb: "#e11d48", name: "Toska" },
+      { body: "#ef4444", wing: "#dc2626", comb: "#fbbf24", name: "Merah" },
+      { body: "#10b981", wing: "#059669", comb: "#ef4444", name: "Hijau Zamrud" },
+      { body: "#f43f5e", wing: "#e11d48", comb: "#facc15", name: "Coral" },
+      { body: "#6366f1", wing: "#4f46e5", comb: "#f43f5e", name: "Indigo" },
+      { body: "#a855f7", wing: "#9333ea", comb: "#fb7185", name: "Lavender" },
+      { body: "#06b6d4", wing: "#0891b2", comb: "#f97316", name: "Sian" },
+    ];
+
+    // =========================================================================
+    // BANK SOAL FIQIH KELAS 7 (30 SOAL PILIHAN GANDA)
+    // Materi: Salat Fardu, Rukun Salat, Syarat Wajib & Syarat Sah, Pembatal Salat
+    // Format: { q: "pertanyaan", options: ["A","B","C","D"], answer: 0 }
+    // =========================================================================
+    const DEFAULT_QUESTIONS = [
+      {
+        q: "Berapa jumlah rakaat salat fardu sehari semalam?",
+        options: ["15 rakaat", "17 rakaat", "19 rakaat", "21 rakaat"],
+        answer: 1
+      },
+      {
+        q: "Salat fardu yang dikerjakan pada waktu pagi sebelum terbit matahari adalah...",
+        options: ["Salat Zuhur", "Salat Subuh", "Salat Asar", "Salat Isya"],
+        answer: 1
+      },
+      {
+        q: "Salat fardu yang memiliki jumlah rakaat paling sedikit adalah...",
+        options: ["Salat Magrib", "Salat Subuh", "Salat Zuhur", "Salat Asar"],
+        answer: 1
+      },
+      {
+        q: "Salat fardu yang jumlah rakaatnya 3 rakaat adalah...",
+        options: ["Salat Subuh", "Salat Zuhur", "Salat Magrib", "Salat Isya"],
+        answer: 2
+      },
+      {
+        q: "Membaca surah Al-Fatihah pada setiap rakaat salat termasuk...",
+        options: ["Syarat wajib salat", "Syarat sah salat", "Rukun salat", "Sunah salat"],
+        answer: 2
+      },
+      {
+        q: "Menutup aurat dan menghadap kiblat termasuk...",
+        options: ["Rukun salat", "Syarat sah salat", "Syarat wajib salat", "Hal yang membatalkan salat"],
+        answer: 1
+      },
+      {
+        q: "Kewajiban salat fardu berlaku bagi orang Islam yang sudah...",
+        options: ["Bekerja", "Balig dan berakal", "Bersekolah", "Memiliki harta"],
+        answer: 1
+      },
+      {
+        q: "Gerakan awal salat yang diawali ucapan 'Allahu Akbar' disebut...",
+        options: ["Iftitah", "Takbiratul ihram", "Rukuk", "Sujud"],
+        answer: 1
+      },
+      {
+        q: "Posisi membungkuk dengan punggung rata sambil membaca tasbih disebut...",
+        options: ["Iktidal", "Rukuk", "Sujud", "Duduk di antara dua sujud"],
+        answer: 1
+      },
+      {
+        q: "Bangun dari rukuk dan berdiri tegak kembali disebut...",
+        options: ["Iktidal", "Sujud", "Tasyahud", "Salam"],
+        answer: 0
+      },
+      {
+        q: "Menolehkan wajah ke kanan dan ke kiri pada akhir salat disebut...",
+        options: ["Takbir", "Salam", "Tahiyat", "Qunut"],
+        answer: 1
+      },
+      {
+        q: "Berbicara dengan sengaja saat salat menyebabkan salat menjadi...",
+        options: ["Sah dengan sujud sahwi", "Batal", "Kurang pahalanya", "Tetap sah"],
+        answer: 1
+      },
+      {
+        q: "Keluar angin atau buang air kecil ketika sedang salat membuat salat...",
+        options: ["Batal", "Tetap sah", "Diulang rakaatnya saja", "Ditunda"],
+        answer: 0
+      },
+      {
+        q: "Makan atau minum dengan sengaja ketika salat hukumnya...",
+        options: ["Makruh", "Membatalkan salat", "Mubah", "Sunah"],
+        answer: 1
+      },
+      {
+        q: "Suci badan, pakaian, dan tempat salat dari najis termasuk...",
+        options: ["Rukun salat", "Syarat sah salat", "Syarat wajib salat", "Sunah ab'ad"],
+        answer: 1
+      },
+      {
+        q: "Seseorang pingsan atau gila sepanjang waktu salat maka ia...",
+        options: ["Wajib salat", "Tidak wajib salat", "Wajib qada 10 kali", "Wajib bayar fidyah"],
+        answer: 1
+      },
+      {
+        q: "Tumaninah artinya...",
+        options: ["Tergesa-gesa", "Tenang sejenak saat gerakan", "Mengeraskan suara", "Mempercepat bacaan"],
+        answer: 1
+      },
+      {
+        q: "Duduk untuk membaca tasyahud akhir dan berselawat atas Nabi termasuk...",
+        options: ["Rukun salat", "Syarat wajib salat", "Adab salat", "Hal makruh"],
+        answer: 0
+      },
+      {
+        q: "Urutan mengerjakan rukun salat dari awal hingga akhir disebut...",
+        options: ["Khusyuk", "Tertib", "Ikhlas", "Jamaah"],
+        answer: 1
+      },
+      {
+        q: "Salat Zuhur dan Salat Asar masing-masing terdiri dari...",
+        options: ["2 rakaat", "3 rakaat", "4 rakaat", "5 rakaat"],
+        answer: 2
+      },
+      {
+        q: "Waktu salat Isya dimulai setelah hilangnya...",
+        options: ["Fajar sodiq", "Mega merah (syafaq)", "Bayangan benda", "Matahari terbit"],
+        answer: 1
+      },
+      {
+        q: "Bergerak berturut-turut sebanyak 3 kali atau lebih di luar gerakan salat dapat...",
+        options: ["Membatalkan salat", "Menambah pahala", "Menyempurnakan salat", "Menjadikan sunah"],
+        answer: 0
+      },
+      {
+        q: "Orang yang belum masuk Islam disebut kafir, sehingga salat bukan...",
+        options: ["Syarat sah salat", "Syarat wajib salat", "Rukun salat", "Bacaan salat"],
+        answer: 1
+      },
+      {
+        q: "Mengetahui telah masuknya waktu salat merupakan bagian dari...",
+        options: ["Syarat sah salat", "Rukun salat", "Bacaan sunah", "Sunah hai'ah"],
+        answer: 0
+      },
+      {
+        q: "Sujud dilakukan sebanyak berapa kali dalam satu rakaat salat?",
+        options: ["1 kali", "2 kali", "3 kali", "4 kali"],
+        answer: 1
+      },
+      {
+        q: "Tertawa terbahak-bahak saat mengerjakan salat membuat salat...",
+        options: ["Batal", "Sah jika pelan", "Tetap sah", "Cukup sujud sahwi"],
+        answer: 0
+      },
+      {
+        q: "Niat salat diucapkan di dalam...",
+        options: ["Hati", "Buku catatan", "Telinga orang lain", "Papan tulis"],
+        answer: 0
+      },
+      {
+        q: "Aurat laki-laki ketika salat minimal adalah antara...",
+        options: ["Leher sampai mata kaki", "Pusar sampai lutut", "Dada sampai pergelangan", "Bahu sampai betis"],
+        answer: 1
+      },
+      {
+        q: "Aurat perempuan ketika salat mencakup seluruh tubuh kecuali...",
+        options: ["Tangan dan kaki", "Wajah dan telapak tangan", "Kepala dan leher", "Wajah dan lengan"],
+        answer: 1
+      },
+      {
+        q: "Jika pakaian terkena najis basah saat salat dan tidak segera dilepas, maka...",
+        options: ["Salat batal", "Salat tetap sah", "Cukup berkumur", "Cukup beristigfar"],
+        answer: 0
+      }
+    ];
+  </script>
+
+  <!-- =========================================================================
+       TOP NAVIGATION / STATUS BAR
+       ========================================================================= -->
+  <header class="bg-barn-dark text-white border-b-4 border-amber-400 sticky top-0 z-40 shadow-md">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2">
+      <!-- Brand / Title -->
+      <button onclick="app.goHomeConfirm()" class="flex items-center gap-2.5 text-left group focus:outline-none">
+        <div id="header-logo-svg" class="w-10 h-10 rounded-2xl bg-amber-400 p-1 shadow-inner flex-shrink-0 group-hover:scale-105 transition-transform"></div>
+        <div>
+          <div class="font-display text-lg sm:text-xl font-bold tracking-wide leading-tight text-amber-300">
+            Balapan Ayam
+          </div>
+          <div class="text-[11px] sm:text-xs text-emerald-200/90 font-medium leading-tight">
+            Fiqih Kelas 7 • Salat Fardu &amp; Ketentuannya
+          </div>
+        </div>
+      </button>
+
+      <!-- Connection & Sound Controls -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div id="connection-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/90 border border-emerald-700 text-xs font-semibold text-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Siap</span>
+        </div>
+
+        <!-- Sound Toggle Button -->
+        <button
+          id="sound-toggle-btn"
+          onclick="soundFX.toggle()"
+          class="btn-3d flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-amber-200 text-xs sm:text-sm font-bold border border-emerald-600 shadow"
+          title="Aktifkan / Matikan Efek Suara"
+        >
+          <span id="sound-icon">🔊</span>
+          <span class="hidden md:inline" id="sound-label">Suara Aktif</span>
+        </button>
+
+        <!-- Home / Reset Button -->
+        <button
+          id="home-btn"
+          onclick="app.goHomeConfirm()"
+          class="hidden btn-3d px-3 py-2 rounded-xl bg-stone-700 hover:bg-stone-600 text-white text-xs sm:text-sm font-bold border border-stone-500 shadow"
+        >
+          🏠 Menu
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Inline Notification Banner (No alert() or confirm() used anywhere) -->
+  <div id="toast-container" class="fixed top-16 right-3 sm:right-6 z-50 flex flex-col gap-2 max-w-sm w-[calc(100vw-1.5rem)] sm:w-auto pointer-events-none"></div>
+
+  <!-- Custom In-Page Confirm Modal (replaces confirm()) -->
+  <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-4 border-amber-400">
+      <h3 id="confirm-title" class="font-display text-2xl font-bold text-stone-900 mb-2">Konfirmasi</h3>
+      <p id="confirm-message" class="text-stone-600 text-sm sm:text-base mb-6">Apakah Anda yakin ingin keluar dari sesi saat ini?</p>
+      <div class="flex justify-end gap-3">
+        <button id="confirm-cancel-btn" class="btn-3d px-5 py-2.5 rounded-2xl bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold text-sm">
+          Batal
+        </button>
+        <button id="confirm-ok-btn" class="btn-3d px-5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow">
+          Ya, Lanjutkan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MAIN CONTAINER (VIEWS SWITCHED DYNAMICALLY)
+       ========================================================================= -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+
+    <!-- -----------------------------------------------------------------------
+         VIEW 1: LANDING / ROLE SELECTION
+         ----------------------------------------------------------------------- -->
+    <section id="view-landing" class="space-y-6 sm:space-y-8">
+      <!-- Hero Card -->
+      <div class="bg-gradient-to-br from-emerald-800 via-green-800 to-barn-dark text-white rounded-3xl p-6 sm:p-10 shadow-xl border-4 border-amber-400/80 relative overflow-hidden">
+        <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div class="lg:col-span-7 space-y-4 text-center lg:text-left">
+            <span class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/50 text-amber-200 text-xs sm:text-sm font-bold">
+              🐔 Multiplayer Real-Time • 10 Detik / Soal • 15 Langkah Finish
+            </span>
+            <h1 class="font-display text-3xl sm:text-5xl font-bold leading-tight text-white drop-shadow">
+              Balapan Ayam <span class="text-amber-300">Fiqih Kelas 7</span>
+            </h1>
+            <p class="text-emerald-100 text-sm sm:text-base max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+              Jawab soal seputar <strong>Salat Fardu, Rukun Salat, Syarat Wajib &amp; Syarat Sah, serta Pembatal Salat</strong> secepat dan setepat mungkin! Jawaban benar membuat ayammu melesat maju ke garis finish.
+            </p>
+            <div class="flex flex-wrap justify-center lg:justify-start gap-2 pt-1 text-xs font-bold text-emerald-100">
+              <span class="px-3 py-1.5 rounded-xl bg-black/25 border border-white/15">⏱️ Timer Otomatis 10s</span>
+              <span class="px-3 py-1.5 rounded-xl bg-black/25 border border-white/15">🔀 Soal &amp; Opsi Acak / Siswa</span>
+              <span class="px-3 py-1.5 rounded-xl bg-black/25 border border-white/15">👥 Hingga 40 Siswa</span>
+            </div>
+          </div>
+
+          <!-- Hero Animated Chicken Showcase -->
+          <div class="lg:col-span-5 flex flex-col items-center justify-center">
+            <div class="bg-emerald-950/60 border-2 border-emerald-500/40 rounded-3xl p-5 w-full max-w-sm flex items-center justify-around gap-2 shadow-inner">
+              <div id="hero-chicken-1" class="w-20 h-20 animate-chicken-idle"></div>
+              <div id="hero-chicken-2" class="w-24 h-24 animate-chicken-hop"></div>
+              <div id="hero-chicken-3" class="w-20 h-20 animate-chicken-idle" style="animation-delay: 0.5s;"></div>
+            </div>
+            <p class="text-xs text-emerald-200 mt-2.5 font-medium">Siapa ayam tercepat mencapai garis finish?</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Main Choice Cards: Guru & Siswa -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-7">
+        <!-- Card Guru -->
+        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border-2 border-emerald-200 hover:border-emerald-500 transition-all flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl mb-4 shadow-inner">
+              👨‍🏫
+            </div>
+            <h2 class="font-display text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
+              Saya Guru (Buat Ruangan)
+            </h2>
+            <p class="text-stone-600 text-sm sm:text-base mb-5 leading-relaxed">
+              Buat kode ruangan 6 karakter untuk ditampilkan di layar proyektor, pantau lintasan balap semua siswa, jeda/akhiri permainan, tempel soal sendiri, dan unduh rekap nilai CSV.
+            </p>
+          </div>
+          <button
+            onclick="teacher.openSetup()"
+            class="btn-3d w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-display text-lg sm:text-xl font-bold shadow-[0_5px_0_#065f46]"
+          >
+            🚀 Buat Ruangan Guru
+          </button>
+        </div>
+
+        <!-- Card Siswa -->
+        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border-2 border-amber-200 hover:border-amber-500 transition-all flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center text-3xl mb-4 shadow-inner">
+              📱
+            </div>
+            <h2 class="font-display text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
+              Saya Siswa (Gabung)
+            </h2>
+            <p class="text-stone-600 text-sm sm:text-base mb-5 leading-relaxed">
+              Masukkan kode ruangan 6 karakter dari gurumu dan nama panggilan unik, lalu jawab soal 10 detikan di HP untuk melajukan ayammu menuju garis finish!
+            </p>
+          </div>
+          <button
+            onclick="student.openJoin()"
+            class="btn-3d w-full py-4 px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-display text-lg sm:text-xl font-bold shadow-[0_5px_0_#b45309]"
+          >
+            🐔 Gabung Ruangan Siswa
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Rules Strip -->
+      <div class="bg-white rounded-3xl p-5 sm:p-6 shadow border border-stone-200">
+        <h3 class="font-display text-lg sm:text-xl font-bold text-stone-800 mb-3">📋 Aturan Singkat Balapan Ayam</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs sm:text-sm">
+          <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
+            <div class="font-bold text-emerald-800 mb-1">1. Soal 10 Detik</div>
+            <p class="text-stone-600">Tiap 10 detik muncul 1 soal pilihan ganda 4 opsi di HP siswa.</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-green-50 border border-green-200">
+            <div class="font-bold text-green-800 mb-1">2. Benar = Maju +1</div>
+            <p class="text-stone-600">Jawaban benar membuat ayam maju 1 langkah dari <span id="rule-track-len">15</span> langkah.</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200">
+            <div class="font-bold text-rose-800 mb-1">3. Salah / Habis Waktu</div>
+            <p class="text-stone-600">Jika salah atau waktu habis, ayam tetap diam di tempatnya.</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <div class="font-bold text-amber-800 mb-1">4. Otomatis Lanjut</div>
+            <p class="text-stone-600">Soal berganti otomatis tiap 10 detik tanpa menunggu pemain lain.</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-sky-50 border border-sky-200">
+            <div class="font-bold text-sky-800 mb-1">5. Juara &amp; Rekap</div>
+            <p class="text-stone-600">Pertama sampai finish menang! Tersedia podium &amp; ekspor CSV.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         VIEW 2: TEACHER LOBBY & CUSTOM QUESTION EDITOR
+         ----------------------------------------------------------------------- -->
+    <section id="view-teacher-lobby" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Column: Room Code, QR Code & Share Link -->
+        <div class="lg:col-span-5 bg-white rounded-3xl p-6 shadow-lg border-2 border-emerald-200 flex flex-col items-center text-center space-y-4">
+          <div class="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">
+            Kode Ruangan Guru
+          </div>
+
+          <div id="teacher-room-code" class="font-display text-4xl sm:text-5xl font-bold tracking-[0.2em] text-barn-dark bg-amber-100 border-2 border-dashed border-amber-400 px-5 py-3 rounded-2xl select-all">
+            ------
+          </div>
+
+          <p id="teacher-peer-status" class="text-xs sm:text-sm font-semibold text-amber-700">
+            Menghubungkan ke jaringan PeerJS...
+          </p>
+
+          <!-- QR Code Container -->
+          <div class="p-3 bg-white border-2 border-stone-200 rounded-2xl shadow-inner flex flex-col items-center">
+            <div id="qrcode-box" class="flex items-center justify-center min-h-[152px] min-w-[152px]"></div>
+            <span class="text-[11px] text-stone-500 mt-1.5 font-medium">Scan QR untuk masuk cepat</span>
+          </div>
+
+          <!-- Shareable Join Link -->
+          <div class="w-full space-y-2 text-left">
+            <label class="text-xs font-bold text-stone-600 block">Tautan Undangan Siswa</label>
+            <div class="flex gap-2">
+              <input
+                id="teacher-share-link"
+                type="text"
+                readonly
+                class="w-full px-3 py-2 text-xs bg-stone-100 border border-stone-300 rounded-xl text-stone-700 font-mono"
+              />
+              <button
+                onclick="teacher.copyInviteLink()"
+                class="btn-3d px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow flex-shrink-0"
+              >
+                📋 Salin
+              </button>
+            </div>
+          </div>
+
+          <!-- Start Game Button -->
+          <button
+            id="start-game-btn"
+            onclick="teacher.startGame()"
+            class="btn-3d w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-display text-xl font-bold shadow-[0_5px_0_#065f46] mt-2"
+          >
+            🏁 Mulai Game Sekarang!
+          </button>
+        </div>
+
+        <!-- Right Column: Connected Students & Custom Questions -->
+        <div class="lg:col-span-7 space-y-6">
+          <!-- Joined Students List -->
+          <div class="bg-white rounded-3xl p-6 shadow-lg border-2 border-stone-200">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div>
+                <h2 class="font-display text-xl sm:text-2xl font-bold text-stone-900">
+                  Daftar Siswa Bergabung
+                </h2>
+                <p class="text-xs sm:text-sm text-stone-500">
+                  Kapasitas maksimal <span id="lobby-max-players">40</span> siswa • Otomatis diperbarui real-time
+                </p>
+              </div>
+              <span id="lobby-player-count" class="px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-900 font-display font-bold text-lg">
+                0 / 40
+              </span>
+            </div>
+
+            <div id="lobby-players-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-64 overflow-y-auto p-1">
+              <div class="col-span-full text-center py-8 text-stone-400 text-sm italic">
+                Belum ada siswa yang masuk. Bagikan kode ruangan atau QR code di samping!
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Question Paste Box ("Tempel Soal Sendiri") -->
+          <div class="bg-white rounded-3xl p-6 shadow-lg border-2 border-amber-200">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h3 class="font-display text-lg sm:text-xl font-bold text-stone-900">
+                ✏️ Tempel Soal Sendiri (Opsional)
+              </h3>
+              <span id="active-question-count-badge" class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-extrabold">
+                30 Soal Aktif
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-stone-600 mb-3 leading-relaxed">
+              Format <strong>satu soal per baris</strong>, dipisah tanda <code class="px-1.5 py-0.5 bg-stone-100 rounded font-bold text-rose-600">|</code>:
+              <br />
+              <code class="text-xs bg-amber-50 px-2 py-1 rounded border border-amber-200 inline-block mt-1">
+                Pertanyaan | Opsi A | Opsi B | Opsi C | Opsi D | Kunci (A/B/C/D atau 1-4)
+              </code>
+            </p>
+
+            <textarea
+              id="custom-questions-input"
+              rows="5"
+              placeholder="Contoh:&#10;Rukun salat yang dilakukan setelah rukuk adalah? | Iktidal | Sujud | Salam | Takbir | A&#10;Salat Magrib terdiri dari berapa rakaat? | 2 | 3 | 4 | 5 | B"
+              class="w-full p-3.5 rounded-2xl border-2 border-stone-300 focus:border-emerald-500 focus:outline-none text-xs sm:text-sm font-mono bg-stone-50"
+            ></textarea>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+              <div class="flex flex-wrap gap-2">
+                <button
+                  onclick="teacher.applyCustomQuestions()"
+                  class="btn-3d px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs sm:text-sm shadow"
+                >
+                  ✅ Terapkan Soal Tempelan
+                </button>
+                <button
+                  onclick="teacher.resetDefaultQuestions()"
+                  class="btn-3d px-4 py-2.5 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold text-xs sm:text-sm"
+                >
+                  ↺ Pakai 30 Soal Fiqih Bawaan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         VIEW 3: TEACHER LIVE RACE ARENA (PROJECTOR VIEW)
+         ----------------------------------------------------------------------- -->
+    <section id="view-teacher-game" class="hidden space-y-5">
+      <!-- Top Control & Timer Bar -->
+      <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-lg border-2 border-emerald-200 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="px-3.5 py-2 rounded-2xl bg-barn-dark text-amber-300 font-display font-bold text-base sm:text-lg tracking-wider">
+            KODE: <span id="race-room-code">------</span>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-stone-500 uppercase">Pertanyaan Ke-</div>
+            <div class="font-display text-xl sm:text-2xl font-bold text-stone-900">
+              #<span id="race-q-index">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Countdown Timer Display -->
+        <div class="flex items-center gap-3 bg-amber-50 border-2 border-amber-300 px-4 py-2 rounded-2xl">
+          <span class="text-2xl">⏱️</span>
+          <div>
+            <div class="text-[11px] font-bold uppercase text-amber-800">Soal Berikutnya</div>
+            <div id="race-countdown-text" class="font-display text-2xl sm:text-3xl font-bold text-stone-900 tabular-nums">
+              10.0s
+            </div>
+          </div>
+        </div>
+
+        <!-- Pause / Resume & End Game Controls -->
+        <div class="flex items-center gap-2.5">
+          <button
+            id="teacher-pause-btn"
+            onclick="teacher.togglePause()"
+            class="btn-3d px-4 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-sm shadow"
+          >
+            ⏸️ Jeda
+          </button>
+          <button
+            onclick="teacher.confirmEndGame()"
+            class="btn-3d px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow"
+          >
+            🛑 Akhiri
+          </button>
+        </div>
+      </div>
+
+      <!-- Paused Overlay Banner -->
+      <div id="teacher-paused-banner" class="hidden bg-amber-400 text-stone-950 rounded-2xl px-5 py-3 font-display text-lg font-bold text-center shadow">
+        ⏸️ PERMAINAN DIJEDA OLEH GURU — Waktu dan pergerakan sementara berhenti.
+      </div>
+
+      <!-- Current Question Preview Card for Projector -->
+      <div class="bg-gradient-to-r from-barn-dark to-emerald-900 text-white rounded-3xl p-5 sm:p-6 shadow-lg border-2 border-amber-400/60">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-400 text-stone-950">
+            Soal Sedang Berjalan
+          </span>
+          <span id="race-answered-stat" class="text-xs sm:text-sm font-bold text-emerald-200">
+            0 / 0 siswa menjawab soal ini
+          </span>
+        </div>
+        <h2 id="race-question-text" class="font-display text-xl sm:text-2xl md:text-3xl font-bold leading-snug mb-4">
+          Memuat pertanyaan...
+        </h2>
+        <div id="race-options-preview" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs sm:text-sm"></div>
+      </div>
+
+      <!-- Race Track & Live Leaderboard Grid -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <!-- Race Track (8 cols on XL) -->
+        <div class="xl:col-span-8 bg-white rounded-3xl p-4 sm:p-6 shadow-lg border-2 border-emerald-200">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 class="font-display text-xl font-bold text-stone-900">
+              🏟️ Lintasan Balapan Ayam (<span id="track-target-steps">15</span> Langkah ke Finish)
+            </h3>
+            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              START → FINISH
+            </span>
+          </div>
+
+          <div class="overflow-x-auto pb-2">
+            <div id="race-track-container" class="min-w-[640px] space-y-2.5">
+              <!-- Lanes rendered dynamically by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Leaderboard (4 cols on XL) -->
+        <div class="xl:col-span-4 bg-white rounded-3xl p-4 sm:p-6 shadow-lg border-2 border-stone-200">
+          <h3 class="font-display text-xl font-bold text-stone-900 mb-3">
+            🏆 Peringkat Langsung
+          </h3>
+          <div id="race-leaderboard-list" class="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+            <!-- Leaderboard rows rendered dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         VIEW 4: STUDENT JOIN SCREEN
+         ----------------------------------------------------------------------- -->
+    <section id="view-student-join" class="hidden max-w-lg mx-auto">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-amber-400 space-y-5">
+        <div class="text-center space-y-1">
+          <div class="text-4xl">🐔</div>
+          <h2 class="font-display text-2xl sm:text-3xl font-bold text-stone-900">
+            Gabung Balapan Ayam
+          </h2>
+          <p class="text-xs sm:text-sm text-stone-600">
+            Masukkan kode ruangan 6 huruf/angka dari gurumu &amp; nama panggilanmu. Jika terputus, gunakan kode dan nama yang sama!
+          </p>
+        </div>
+
+        <form id="student-join-form" onsubmit="student.submitJoin(event)" class="space-y-4">
+          <div>
+            <label for="student-code-input" class="block text-xs font-extrabold uppercase tracking-wider text-stone-700 mb-1.5">
+              Kode Ruangan (6 Karakter)
+            </label>
+            <input
+              id="student-code-input"
+              type="text"
+              maxlength="6"
+              required
+              placeholder="CONTOH: A7K9M2"
+              class="w-full px-4 py-3.5 rounded-2xl border-2 border-stone-300 focus:border-emerald-600 focus:outline-none font-display text-2xl font-bold tracking-[0.22em] text-center uppercase bg-stone-50"
+            />
+          </div>
+
+          <div>
+            <label for="student-name-input" class="block text-xs font-extrabold uppercase tracking-wider text-stone-700 mb-1.5">
+              Nama Panggilan (Unik / Tidak Kembar)
+            </label>
+            <input
+              id="student-name-input"
+              type="text"
+              maxlength="18"
+              required
+              placeholder="Contoh: Ahmad / Salsa"
+              class="w-full px-4 py-3.5 rounded-2xl border-2 border-stone-300 focus:border-emerald-600 focus:outline-none text-base font-bold bg-stone-50"
+            />
+          </div>
+
+          <button
+            id="student-join-btn"
+            type="submit"
+            class="btn-3d w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-display text-xl font-bold shadow-[0_5px_0_#065f46]"
+          >
+            🚪 Masuk Ruang Tunggu
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         VIEW 5: STUDENT WAITING ROOM
+         ----------------------------------------------------------------------- -->
+    <section id="view-student-waiting" class="hidden max-w-xl mx-auto">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-2 border-emerald-300 text-center space-y-5">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+          <span>Ruang Tunggu Aktif</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <div id="student-waiting-chicken" class="w-28 h-28 animate-chicken-hop"></div>
+          <h2 id="student-waiting-name" class="font-display text-2xl sm:text-3xl font-bold text-stone-900 mt-1">
+            Nama Siswa
+          </h2>
+          <p class="text-sm text-stone-500">
+            Ruangan: <strong id="student-waiting-code" class="text-stone-800 tracking-widest">------</strong>
+          </p>
+        </div>
+
+        <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 text-sm text-stone-700">
+          Menunggu guru menekan tombol <strong>"Mulai Game"</strong>... Siapkan jarimu untuk menjawab tiap soal dalam 10 detik!
+        </div>
+
+        <div class="text-left">
+          <div class="text-xs font-extrabold uppercase tracking-wider text-stone-500 mb-2">
+            Teman Satu Ruangan (<span id="student-lobby-count">1</span>)
+          </div>
+          <div id="student-lobby-list" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 bg-stone-50 rounded-2xl border border-stone-200"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         VIEW 6: STUDENT LIVE GAMEPLAY (MOBILE OPTIMIZED)
+         ----------------------------------------------------------------------- -->
+    <section id="view-student-game" class="hidden max-w-2xl mx-auto space-y-4">
+      <!-- Top Progress & Timer Bar -->
+      <div class="bg-white rounded-3xl p-4 shadow-lg border-2 border-emerald-200 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <div id="student-hud-chicken" class="w-11 h-11 flex-shrink-0"></div>
+            <div>
+              <div id="student-hud-name" class="font-display font-bold text-base sm:text-lg text-stone-900 leading-tight">
+                Siswa
+              </div>
+              <div class="text-xs font-bold text-emerald-700">
+                Langkah: <span id="student-step-text">0</span> / <span id="student-goal-text">15</span> • Peringkat #<span id="student-rank-text">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-right">
+            <div class="text-[11px] font-bold uppercase text-stone-400">Soal #<span id="student-q-num">1</span></div>
+            <div id="student-timer-num" class="font-display text-2xl font-bold text-amber-600 tabular-nums">
+              10.0s
+            </div>
+          </div>
+        </div>
+
+        <!-- 10-Second Progress Bar -->
+        <div class="w-full h-3.5 bg-stone-200 rounded-full overflow-hidden p-0.5">
+          <div id="student-timer-bar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500 rounded-full transition-all duration-100" style="width: 100%;"></div>
+        </div>
+
+        <!-- Mini Track Progress Bar for Own Chicken -->
+        <div>
+          <div class="flex justify-between text-[11px] font-bold text-stone-500 mb-1">
+            <span>Start</span>
+            <span>Ayam Kamu Menuju Finish!</span>
+            <span>Finish 🏁</span>
+          </div>
+          <div class="relative h-8 bg-emerald-100 border-2 border-emerald-400 rounded-full overflow-hidden flex items-center px-1">
+            <div id="student-mini-progress" class="h-full bg-emerald-300/70 rounded-full transition-all duration-300" style="width: 0%;"></div>
+            <div id="student-mini-avatar" class="absolute left-1 transition-all duration-300 w-7 h-7 flex items-center justify-center"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paused Notice on Student Screen -->
+      <div id="student-paused-banner" class="hidden bg-amber-400 text-stone-950 rounded-2xl px-4 py-3 font-display font-bold text-center text-sm sm:text-base shadow">
+        ⏸️ Permainan sedang dijeda oleh guru...
+      </div>
+
+      <!-- Question & 4 Large Answer Buttons -->
+      <div id="student-question-card" class="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border-2 border-stone-200 space-y-4">
+        <div class="text-xs font-extrabold uppercase tracking-wider text-emerald-700">
+          Pertanyaan Fiqih
+        </div>
+        <h2 id="student-question-text" class="font-display text-xl sm:text-2xl font-bold text-stone-900 leading-snug">
+          Menunggu soal pertama...
+        </h2>
+
+        <!-- Instant Feedback Banner -->
+        <div id="student-feedback-box" class="hidden rounded-2xl p-3.5 text-center font-display font-bold text-base sm:text-lg border-2"></div>
+
+        <!-- 4 Big Touch-Friendly Option Buttons -->
+        <div id="student-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         VIEW 7: RESULTS & PODIUM (SHARED BY TEACHER & STUDENT)
+         ----------------------------------------------------------------------- -->
+    <section id="view-results" class="hidden space-y-6">
+      <!-- Confetti container -->
+      <div id="confetti-layer"></div>
+
+      <div class="bg-gradient-to-br from-barn-dark via-emerald-900 to-green-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-amber-400 text-center space-y-6">
+        <div class="space-y-1">
+          <div class="inline-block px-4 py-1 rounded-full bg-amber-400 text-stone-950 font-display font-bold text-xs sm:text-sm uppercase">
+            🏆 Balapan Selesai!
+          </div>
+          <h2 class="font-display text-3xl sm:text-4xl font-bold">
+            Podium &amp; Hasil Akhir
+          </h2>
+          <p id="results-subtitle" class="text-emerald-200 text-sm">
+            Rekapitulasi posisi ayam, jumlah jawaban benar/salah, dan akurasi pemain.
+          </p>
+        </div>
+
+        <!-- Top 3 Podium -->
+        <div id="podium-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end max-w-4xl mx-auto pt-2">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Action Buttons: CSV Download (Teacher) & Back to Menu -->
+        <div class="flex flex-wrap justify-center gap-3 pt-2">
+          <button
+            id="download-csv-btn"
+            onclick="teacher.downloadCSV()"
+            class="hidden btn-3d px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-display font-bold text-base sm:text-lg shadow-[0_4px_0_#b45309]"
+          >
+            📥 Unduh Hasil (CSV)
+          </button>
+          <button
+            onclick="app.goHomeConfirm()"
+            class="btn-3d px-6 py-3.5 rounded-2xl bg-white hover:bg-stone-100 text-stone-900 font-display font-bold text-base sm:text-lg shadow"
+          >
+            🏠 Kembali ke Beranda
+          </button>
+        </div>
+      </div>
+
+      <!-- Full Standings Table -->
+      <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-lg border-2 border-stone-200">
+        <h3 class="font-display text-xl sm:text-2xl font-bold text-stone-900 mb-4">
+          📊 Tabel Peringkat Lengkap
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="border-b-2 border-stone-200 text-stone-500 uppercase text-xs">
+                <th class="py-3 px-3">Peringkat</th>
+                <th class="py-3 px-3">Pemain &amp; Ayam</th>
+                <th class="py-3 px-3 text-center">Langkah</th>
+                <th class="py-3 px-3 text-center text-emerald-700">Benar</th>
+                <th class="py-3 px-3 text-center text-rose-600">Salah</th>
+                <th class="py-3 px-3 text-right">Akurasi</th>
+              </tr>
+            </thead>
+            <tbody id="results-table-body" class="divide-y divide-stone-100 font-semibold">
+              <!-- Rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       FOOTER
+       ========================================================================= -->
+  <footer class="bg-barn-dark text-emerald-200/80 text-xs py-4 px-4 text-center border-t border-emerald-900">
+    Balapan Ayam Edukasi Fiqih Kelas 7 • WebRTC PeerJS Multiplayer • Dibuat untuk pembelajaran interaktif di kelas &amp; HP
+  </footer>
+
+  <!-- =========================================================================
+       APPLICATION JAVASCRIPT LOGIC
+       ========================================================================= -->
+  <script>
+    /**
+     * =========================================================================
+     * 1. SVG CHICKEN ILLUSTRATION GENERATOR (Cute Realistic-ish Cartoon Rooster/Hen)
+     * =========================================================================
+     */
+    function createChickenSVG(paletteIndex = 0, facingRight = true) {
+      const p = CHICKEN_PALETTES[paletteIndex % CHICKEN_PALETTES.length];
+      const flipTransform = facingRight ? "" : `transform="translate(80, 0) scale(-1, 1)"`;
+
+      return `
+        <svg viewBox="0 0 80 80" class="w-full h-full drop-shadow" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <g ${flipTransform}>
+            <!-- Ground shadow -->
+            <ellipse cx="40" cy="72" rx="22" ry="5" fill="rgba(0,0,0,0.22)" />
+
+            <!-- Legs & feet -->
+            <path d="M33 56 L31 69 M31 69 L25 71 M31 69 L31 72 M31 69 L36 71" stroke="#ea580c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M47 56 L49 69 M49 69 L44 71 M49 69 L49 72 M49 69 L54 71" stroke="#ea580c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+            <!-- Tail feathers -->
+            <path d="M21 43 Q7 31 12 21 Q18 28 24 36 Z" fill="${p.wing}" />
+            <path d="M19 47 Q5 41 9 30 Q16 36 23 42 Z" fill="${p.body}" />
+
+            <!-- Main plump body -->
+            <ellipse cx="41" cy="46" rx="21" ry="16" fill="${p.body}" />
+            <!-- Subtle highlight on body -->
+            <ellipse cx="44" cy="41" rx="13" ry="8" fill="#ffffff" opacity="0.16" />
+
+            <!-- Wing -->
+            <path d="M31 44 C31 38, 45 38, 47 46 C48 52, 36 55, 31 48 Z" fill="${p.wing}" stroke="rgba(0,0,0,0.12)" stroke-width="1" />
+
+            <!-- Neck & Head -->
+            <circle cx="52" cy="28" r="12" fill="${p.body}" />
+            <path d="M38 35 Q47 26 52 24 L56 38 Q46 44 38 39 Z" fill="${p.body}" />
+
+            <!-- Red Comb (jengger) -->
+            <path d="M46 17 C46 10, 52 10, 53 16 C55 9, 61 11, 59 18 C62 15, 65 19, 60 22 L47 21 Z" fill="${p.comb}" />
+
+            <!-- Wattle (pial di bawah paruh) -->
+            <ellipse cx="62" cy="34" rx="3.2" ry="4.5" fill="${p.comb}" />
+
+            <!-- Beak (paruh) -->
+            <polygon points="62,26 73,29 62,32" fill="#facc15" stroke="#ca8a04" stroke-width="0.8" stroke-linejoin="round" />
+
+            <!-- Expressive Eye -->
+            <circle cx="55" cy="25" r="4.3" fill="#ffffff" />
+            <circle cx="56.3" cy="25" r="2.4" fill="#111827" />
+            <circle cx="57.2" cy="23.9" r="1" fill="#ffffff" />
+          </g>
+        </svg>
+      `;
+    }
+
+    /**
+     * =========================================================================
+     * 2. WEB AUDIO API SOUND EFFECTS (NO EXTERNAL AUDIO FILES)
+     * =========================================================================
+     */
+    const soundFX = {
+      enabled: true,
+      ctx: null,
+
+      ensureCtx() {
+        if (!this.enabled) return null;
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+          }
+        }
+        if (this.ctx && this.ctx.state === "suspended") {
+          this.ctx.resume().catch(() => {});
+        }
+        return this.ctx;
+      },
+
+      toggle() {
+        this.enabled = !this.enabled;
+        const icon = document.getElementById("sound-icon");
+        const label = document.getElementById("sound-label");
+        if (this.enabled) {
+          icon.textContent = "🔊";
+          label.textContent = "Suara Aktif";
+          this.ensureCtx();
+          this.playTone(523.25, 0.1, "sine", 0.12);
+        } else {
+          icon.textContent = "🔇";
+          label.textContent = "Suara Mati";
+        }
+      },
+
+      playTone(freq, duration = 0.15, type = "sine", volume = 0.15, delay = 0) {
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+        try {
+          const now = ctx.currentTime + delay;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(volume, now + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration + 0.02);
+        } catch (err) {
+          // Ignore audio scheduling errors on restricted browsers
+        }
+      },
+
+      playCorrect() {
+        // Cheerful ascending chime
+        this.playTone(523.25, 0.12, "triangle", 0.18, 0);
+        this.playTone(659.25, 0.12, "triangle", 0.18, 0.09);
+        this.playTone(783.99, 0.22, "triangle", 0.2, 0.18);
+      },
+
+      playWrong() {
+        // Low gentle buzz
+        this.playTone(220, 0.18, "sawtooth", 0.12, 0);
+        this.playTone(174.61, 0.24, "sawtooth", 0.12, 0.14);
+      },
+
+      playTick() {
+        this.playTone(880, 0.05, "sine", 0.06, 0);
+      },
+
+      playStart() {
+        this.playTone(440, 0.12, "square", 0.1, 0);
+        this.playTone(554.37, 0.12, "square", 0.1, 0.12);
+        this.playTone(659.25, 0.12, "square", 0.1, 0.24);
+        this.playTone(880, 0.25, "square", 0.12, 0.36);
+      },
+
+      playVictory() {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((n, idx) => {
+          this.playTone(n, 0.2, "triangle", 0.2, idx * 0.13);
+        });
+      }
+    };
+
+    /**
+     * =========================================================================
+     * 3. UI HELPERS (TOASTS, CONFIRM MODAL, SHUFFLE, RANKING)
+     * =========================================================================
+     */
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toast-container");
+      const colorMap = {
+        info: "bg-stone-900 text-white border-emerald-400",
+        success: "bg-emerald-800 text-white border-emerald-300",
+        error: "bg-rose-700 text-white border-rose-300",
+        warning: "bg-amber-500 text-stone-950 border-amber-200"
+      };
+      const toast = document.createElement("div");
+      toast.className = `pointer-events-auto px-4 py-3 rounded-2xl border-2 shadow-xl text-xs sm:text-sm font-bold transition-all ${colorMap[type] || colorMap.info}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-8px)";
+        setTimeout(() => toast.remove(), 250);
+      }, 3200);
+    }
+
+    function showConfirmModal(title, message, onConfirm) {
+      const modal = document.getElementById("confirm-modal");
+      document.getElementById("confirm-title").textContent = title;
+      document.getElementById("confirm-message").textContent = message;
+      modal.classList.remove("hidden");
+
+      const okBtn = document.getElementById("confirm-ok-btn");
+      const cancelBtn = document.getElementById("confirm-cancel-btn");
+
+      const cleanup = () => {
+        modal.classList.add("hidden");
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+      };
+
+      cancelBtn.onclick = cleanup;
+      okBtn.onclick = () => {
+        cleanup();
+        if (typeof onConfirm === "function") onConfirm();
+      };
+    }
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function generateRoomCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Excludes ambiguous 0, O, 1, I
+      let code = "";
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    /**
+     * Computes ranked players array:
+     * 1. Higher steps first
+     * 2. Higher correct count first
+     * 3. Lower wrong count first
+     * 4. Alphabetical name tie-breaker
+     */
+    function computeRankedPlayers(playersObjOrArr) {
+      const list = Array.isArray(playersObjOrArr)
+        ? [...playersObjOrArr]
+        : Object.values(playersObjOrArr || {});
+
+      list.sort((a, b) => {
+        if (b.steps !== a.steps) return b.steps - a.steps;
+        if (b.correct !== a.correct) return b.correct - a.correct;
+        if (a.wrong !== b.wrong) return a.wrong - b.wrong;
+        return a.name.localeCompare(b.name, "id");
+      });
+
+      return list.map((p, idx) => {
+        const totalAnswered = (p.correct || 0) + (p.wrong || 0);
+        const accuracy = totalAnswered > 0 ? Math.round(((p.correct || 0) / totalAnswered) * 100) : 0;
+        return {
+          ...p,
+          rank: idx + 1,
+          accuracy
+        };
+      });
+    }
+
+    /**
+     * =========================================================================
+     * 4. GLOBAL APP CONTROLLER
+     * =========================================================================
+     */
+    const app = {
+      currentView: "view-landing",
+      role: null, // 'teacher' | 'student' | null
+
+      init() {
+        // Set rule strip & track length labels
+        document.getElementById("rule-track-len").textContent = TRACK_LENGTH;
+        document.getElementById("lobby-max-players").textContent = MAX_PLAYERS;
+        document.getElementById("track-target-steps").textContent = TRACK_LENGTH;
+        document.getElementById("student-goal-text").textContent = TRACK_LENGTH;
+
+        // Render decorative SVGs
+        document.getElementById("header-logo-svg").innerHTML = createChickenSVG(0, true);
+        document.getElementById("hero-chicken-1").innerHTML = createChickenSVG(1, true);
+        document.getElementById("hero-chicken-2").innerHTML = createChickenSVG(0, true);
+        document.getElementById("hero-chicken-3").innerHTML = createChickenSVG(4, true);
+
+        // Check URL query params for quick student room link (?room=XXXXXX)
+        const params = new URLSearchParams(window.location.search);
+        const roomParam = params.get("room");
+        if (roomParam && /^[A-Z0-9]{6}$/i.test(roomParam.trim())) {
+          document.getElementById("student-code-input").value = roomParam.trim().toUpperCase();
+          this.showView("view-student-join");
+          this.role = "student";
+          document.getElementById("home-btn").classList.remove("hidden");
+        } else {
+          this.showView("view-landing");
+        }
+      },
+
+      showView(viewId) {
+        const views = [
+          "view-landing",
+          "view-teacher-lobby",
+          "view-teacher-game",
+          "view-student-join",
+          "view-student-waiting",
+          "view-student-game",
+          "view-results"
+        ];
+        views.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.classList.toggle("hidden", id !== viewId);
+        });
+        this.currentView = viewId;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
+
+      setConnectionBadge(text, colorClass = "bg-emerald-900/90 text-emerald-200 border-emerald-700") {
+        const badge = document.getElementById("connection-badge");
+        badge.className = `hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${colorClass}`;
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-current animate-pulse"></span><span>${text}</span>`;
+      },
+
+      goHomeConfirm() {
+        if (!this.role || this.currentView === "view-landing") {
+          this.resetAll(false);
+          return;
+        }
+        showConfirmModal(
+          "Kembali ke Beranda?",
+          "Sesi permainan atau koneksi ruangan saat ini akan ditutup.",
+          () => this.resetAll(true)
+        );
+      },
+
+      resetAll(notify = true) {
+        teacher.cleanup();
+        student.cleanup();
+        this.role = null;
+        document.getElementById("home-btn").classList.add("hidden");
+        document.getElementById("confetti-layer").innerHTML = "";
+        this.setConnectionBadge("Siap");
+        this.showView("view-landing");
+        if (notify) showToast("Kembali ke halaman utama.", "info");
+      }
+    };
+
+    /**
+     * =========================================================================
+     * 5. TEACHER HOST ENGINE (PeerJS Host, Timer, Question Shuffler, CSV)
+     * =========================================================================
+     */
+    const teacher = {
+      peer: null,
+      roomCode: "",
+      connections: new Map(), // peerId -> DataConnection
+      players: {},          // normalizedName -> player object
+      questionsPool: [...DEFAULT_QUESTIONS],
+      gameStatus: "lobby",  // 'lobby' | 'playing' | 'paused' | 'finished'
+      questionIndex: 0,
+      currentMasterQuestion: null,
+      questionStartTime: 0,
+      remainingMs: QUESTION_INTERVAL,
+      tickInterval: null,
+      lastCountdownSecond: null,
+      winnerDeclared: false,
+
+      openSetup() {
+        this.cleanup();
+        app.role = "teacher";
+        document.getElementById("home-btn").classList.remove("hidden");
+        this.roomCode = generateRoomCode();
+        this.questionsPool = [...DEFAULT_QUESTIONS];
+        this.players = {};
+        this.gameStatus = "lobby";
+        this.questionIndex = 0;
+        this.winnerDeclared = false;
+
+        document.getElementById("teacher-room-code").textContent = this.roomCode;
+        document.getElementById("active-question-count-badge").textContent = `${this.questionsPool.length} Soal Aktif`;
+        this.updateLobbyPlayersUI();
+
+        // Build invite URL & QR Code
+        const baseUrl = window.location.href.split("?")[0];
+        const shareUrl = `${baseUrl}?room=${this.roomCode}`;
+        document.getElementById("teacher-share-link").value = shareUrl;
+        this.renderQRCode(shareUrl);
+
+        app.showView("view-teacher-lobby");
+        this.initHostPeer();
+      },
+
+      renderQRCode(urlText) {
+        const box = document.getElementById("qrcode-box");
+        box.innerHTML = "";
+        try {
+          if (typeof QRCode !== "undefined") {
+            new QRCode(box, {
+              text: urlText,
+              width: 148,
+              height: 148,
+              colorDark: "#14261c",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.M
+            });
+          } else {
+            box.innerHTML = `<div class="text-xs text-stone-500 p-4">QR tidak tersedia, gunakan tautan di bawah.</div>`;
+          }
+        } catch (err) {
+          box.innerHTML = `<div class="text-xs text-stone-500 p-4">QR tidak dapat dibuat.</div>`;
+        }
+      },
+
+      copyInviteLink() {
+        const input = document.getElementById("teacher-share-link");
+        input.select();
+        input.setSelectionRange(0, 99999);
+        try {
+          document.execCommand("copy");
+          showToast("Tautan undangan berhasil disalin!", "success");
+        } catch (err) {
+          showToast("Salin manual tautan pada kolom.", "warning");
+        }
+      },
+
+      initHostPeer() {
+        const statusEl = document.getElementById("teacher-peer-status");
+        statusEl.textContent = "Menghubungkan ke server PeerJS...";
+        statusEl.className = "text-xs sm:text-sm font-semibold text-amber-700";
+
+        if (typeof Peer === "undefined") {
+          statusEl.textContent = "Gagal memuat PeerJS dari CDN. Periksa koneksi internet.";
+          statusEl.className = "text-xs sm:text-sm font-bold text-rose-600";
+          return;
+        }
+
+        const hostPeerId = ROOM_PREFIX + this.roomCode;
+        this.peer = new Peer(hostPeerId, {
+          debug: 0
+        });
+
+        this.peer.on("open", () => {
+          statusEl.textContent = "🟢 Ruangan aktif & siap menerima hingga 40 siswa!";
+          statusEl.className = "text-xs sm:text-sm font-bold text-emerald-700";
+          app.setConnectionBadge(`Host: ${this.roomCode}`);
+        });
+
+        this.peer.on("connection", (conn) => {
+          this.handleIncomingConnection(conn);
+        });
+
+        this.peer.on("error", (err) => {
+          console.error("Host Peer error:", err);
+          if (err.type === "unavailable-id") {
+            statusEl.textContent = "Kode ruangan sedang dipakai, membuat ulang kode...";
+            this.roomCode = generateRoomCode();
+            document.getElementById("teacher-room-code").textContent = this.roomCode;
+            setTimeout(() => this.initHostPeer(), 500);
+          } else {
+            statusEl.textContent = "Gangguan koneksi jaringan PeerJS. Mencoba menjaga koneksi...";
+          }
+        });
+      },
+
+      handleIncomingConnection(conn) {
+        conn.on("open", () => {
+          this.connections.set(conn.peer, conn);
+        });
+
+        conn.on("data", (msg) => {
+          if (!msg || typeof msg !== "object") return;
+          if (msg.type === "JOIN") {
+            this.handleStudentJoin(conn, msg.name);
+          } else if (msg.type === "ANSWER") {
+            this.handleStudentAnswer(conn, msg);
+          }
+        });
+
+        conn.on("close", () => {
+          this.connections.delete(conn.peer);
+          // Mark player disconnected if matched
+          Object.values(this.players).forEach((p) => {
+            if (p.peerId === conn.peer) {
+              p.connected = false;
+            }
+          });
+          this.broadcastLobbyState();
+          this.updateLobbyPlayersUI();
+        });
+
+        conn.on("error", () => {
+          this.connections.delete(conn.peer);
+        });
+      },
+
+      /**
+       * Handles new join or reconnection with same name.
+       * Rejects duplicate names that are actively connected!
+       */
+      handleStudentJoin(conn, rawName) {
+        const cleanName = (rawName || "").trim().replace(/\s+/g, " ");
+        if (!cleanName || cleanName.length < 2) {
+          conn.send({ type: "JOIN_REJECTED", reason: "Nama panggilan minimal 2 karakter." });
+          return;
+        }
+
+        const key = cleanName.toLowerCase();
+        const existing = this.players[key];
+
+        // Reconnect case: same name already exists in room
+        if (existing) {
+          if (existing.connected && existing.peerId !== conn.peer) {
+            conn.send({
+              type: "JOIN_REJECTED",
+              reason: `Nama "${cleanName}" sudah dipakai siswa lain yang sedang aktif.`
+            });
+            return;
+          }
+
+          // Reconnect allowed! Restore state, steps, score, and shuffled deck
+          existing.peerId = conn.peer;
+          existing.connected = true;
+          conn.send({
+            type: "JOIN_ACCEPTED",
+            player: this.sanitizePlayerForClient(existing),
+            gameStatus: this.gameStatus,
+            trackLength: TRACK_LENGTH
+          });
+
+          showToast(`${existing.name} terhubung kembali ke ruangan.`, "info");
+          this.broadcastLobbyState();
+          this.updateLobbyPlayersUI();
+
+          // If game is currently running, send active question immediately
+          if (this.gameStatus === "playing" || this.gameStatus === "paused") {
+            this.sendQuestionToPlayer(existing, this.questionIndex, this.remainingMs);
+          }
+          return;
+        }
+
+        // New player capacity check
+        const currentCount = Object.keys(this.players).length;
+        if (currentCount >= MAX_PLAYERS) {
+          conn.send({
+            type: "JOIN_REJECTED",
+            reason: `Ruangan sudah penuh (maksimal ${MAX_PLAYERS} siswa).`
+          });
+          return;
+        }
+
+        const paletteIndex = currentCount % CHICKEN_PALETTES.length;
+        const deck = this.buildShuffledDeckForPlayer();
+
+        const newPlayer = {
+          id: key,
+          name: cleanName,
+          peerId: conn.peer,
+          paletteIndex,
+          steps: 0,
+          correct: 0,
+          wrong: 0,
+          connected: true,
+          deck, // Array of shuffled question objects per student
+          answeredForQIndex: -1,
+          lastFeedback: null
+        };
+
+        this.players[key] = newPlayer;
+        soundFX.playTick();
+        showToast(`${cleanName} bergabung ke ruangan!`, "success");
+
+        conn.send({
+          type: "JOIN_ACCEPTED",
+          player: this.sanitizePlayerForClient(newPlayer),
+          gameStatus: this.gameStatus,
+          trackLength: TRACK_LENGTH
+        });
+
+        this.broadcastLobbyState();
+        this.updateLobbyPlayersUI();
+
+        // If student joins mid-game, send current question right away
+        if (this.gameStatus === "playing" || this.gameStatus === "paused") {
+          this.sendQuestionToPlayer(newPlayer, this.questionIndex, this.remainingMs);
+        }
+      },
+
+      sanitizePlayerForClient(p) {
+        return {
+          id: p.id,
+          name: p.name,
+          paletteIndex: p.paletteIndex,
+          steps: p.steps,
+          correct: p.correct,
+          wrong: p.wrong,
+          connected: p.connected
+        };
+      },
+
+      /**
+       * Creates a per-student shuffled question sequence with shuffled options
+       * so each student gets a different question & option order.
+       */
+      buildShuffledDeckForPlayer() {
+        const shuffledQuestions = shuffleArray(this.questionsPool);
+        return shuffledQuestions.map((item) => {
+          const correctText = item.options[item.answer];
+          const shuffledOptions = shuffleArray(item.options);
+          const newAnswerIndex = shuffledOptions.indexOf(correctText);
+          return {
+            q: item.q,
+            options: shuffledOptions,
+            answer: newAnswerIndex
+          };
+        });
+      },
+
+      updateLobbyPlayersUI() {
+        const list = Object.values(this.players);
+        document.getElementById("lobby-player-count").textContent = `${list.length} / ${MAX_PLAYERS}`;
+        const grid = document.getElementById("lobby-players-grid");
+
+        if (list.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-full text-center py-8 text-stone-400 text-sm italic">
+              Belum ada siswa yang masuk. Bagikan kode ruangan atau QR code di samping!
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = list
+          .map(
+            (p) => `
+            <div class="flex items-center gap-2.5 p-2.5 rounded-2xl bg-emerald-50/80 border border-emerald-200">
+              <div class="w-9 h-9 flex-shrink-0">${createChickenSVG(p.paletteIndex, true)}</div>
+              <div class="min-w-0 flex-1">
+                <div class="font-bold text-sm text-stone-900 truncate">${this.escapeHTML(p.name)}</div>
+                <div class="text-[11px] text-emerald-700 font-semibold">
+                  ${p.connected ? "● Siap balapan" : "○ Terputus"}
+                </div>
+              </div>
+            </div>
+          `
+          )
+          .join("");
+      },
+
+      broadcastLobbyState() {
+        const playersSummary = Object.values(this.players).map((p) => this.sanitizePlayerForClient(p));
+        this.broadcast({
+          type: "LOBBY_UPDATE",
+          players: playersSummary
+        });
+      },
+
+      broadcast(payload) {
+        this.connections.forEach((conn) => {
+          if (conn && conn.open) {
+            try {
+              conn.send(payload);
+            } catch (e) {
+              // Ignore send failure on closing channel
+            }
+          }
+        });
+      },
+
+      sendToPlayer(player, payload) {
+        if (!player || !player.peerId) return;
+        const conn = this.connections.get(player.peerId);
+        if (conn && conn.open) {
+          try {
+            conn.send(payload);
+          } catch (e) {
+            // Ignore
+          }
+        }
+      },
+
+      /**
+       * Parses custom questions pasted by teacher:
+       * Format per line: Question | Opt1 | Opt2 | Opt3 | Opt4 | Answer (A/B/C/D or 1-4 or exact option)
+       */
+      applyCustomQuestions() {
+        const raw = document.getElementById("custom-questions-input").value || "";
+        const lines = raw
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0);
+
+        if (lines.length === 0) {
+          showToast("Kotak soal masih kosong. Isi minimal 1 baris soal.", "warning");
+          return;
+        }
+
+        const parsed = [];
+        const errors = [];
+
+        lines.forEach((line, idx) => {
+          const parts = line.split("|").map((s) => s.trim());
+          if (parts.length < 6) {
+            errors.push(`Baris ${idx + 1}: kurang kolom (butuh 6 bagian dipisah |).`);
+            return;
+          }
+          const qText = parts[0];
+          const opts = parts.slice(1, 5);
+          const ansRaw = parts[5];
+
+          if (!qText || opts.some((o) => !o)) {
+            errors.push(`Baris ${idx + 1}: pertanyaan atau opsi tidak boleh kosong.`);
+            return;
+          }
+
+          let ansIdx = -1;
+          const upper = ansRaw.toUpperCase();
+          if (["A", "1", "0"].includes(upper)) ansIdx = 0;
+          else if (["B", "2"].includes(upper)) ansIdx = 1;
+          else if (["C", "3"].includes(upper)) ansIdx = 2;
+          else if (["D", "4"].includes(upper)) ansIdx = 3;
+          else {
+            const matchOpt = opts.findIndex((o) => o.toLowerCase() === ansRaw.toLowerCase());
+            if (matchOpt !== -1) ansIdx = matchOpt;
+          }
+
+          if (ansIdx < 0 || ansIdx > 3) {
+            errors.push(`Baris ${idx + 1}: kunci jawaban "${ansRaw}" tidak dikenali (gunakan A/B/C/D atau 1-4).`);
+            return;
+          }
+
+          parsed.push({
+            q: qText,
+            options: opts,
+            answer: ansIdx
+          });
+        });
+
+        if (parsed.length === 0) {
+          showToast(errors[0] || "Tidak ada soal valid yang dapat diterapkan.", "error");
+          return;
+        }
+
+        this.questionsPool = parsed;
+        document.getElementById("active-question-count-badge").textContent = `${this.questionsPool.length} Soal Aktif`;
+
+        if (errors.length > 0) {
+          showToast(`${parsed.length} soal diterapkan (${errors.length} baris bermasalah dilewati).`, "warning");
+        } else {
+          showToast(`Berhasil menerapkan ${parsed.length} soal buatan sendiri!`, "success");
+        }
+      },
+
+      resetDefaultQuestions() {
+        this.questionsPool = [...DEFAULT_QUESTIONS];
+        document.getElementById("custom-questions-input").value = "";
+        document.getElementById("active-question-count-badge").textContent = `${this.questionsPool.length} Soal Aktif`;
+        showToast("Dikembalikan ke 30 soal Fiqih Kelas 7 bawaan.", "success");
+      },
+
+      startGame() {
+        if (this.questionsPool.length === 0) {
+          showToast("Bank soal kosong! Tambahkan soal terlebih dahulu.", "error");
+          return;
+        }
+
+        // Ensure every player has a fresh shuffled deck & clean game stats
+        Object.values(this.players).forEach((p) => {
+          p.steps = 0;
+          p.correct = 0;
+          p.wrong = 0;
+          p.answeredForQIndex = -1;
+          p.lastFeedback = null;
+          p.deck = this.buildShuffledDeckForPlayer();
+        });
+
+        this.gameStatus = "playing";
+        this.questionIndex = 0;
+        this.winnerDeclared = false;
+
+        document.getElementById("race-room-code").textContent = this.roomCode;
+        document.getElementById("teacher-paused-banner").classList.add("hidden");
+        document.getElementById("teacher-pause-btn").textContent = "⏸️ Jeda";
+
+        app.showView("view-teacher-game");
+        soundFX.playStart();
+
+        this.broadcast({
+          type: "GAME_START",
+          trackLength: TRACK_LENGTH,
+          questionInterval: QUESTION_INTERVAL
+        });
+
+        this.launchQuestionCycle(0);
+      },
+
+      launchQuestionCycle(qIdx) {
+        this.questionIndex = qIdx;
+        this.remainingMs = QUESTION_INTERVAL;
+        this.questionStartTime = performance.now();
+        this.lastCountdownSecond = null;
+
+        // Reset answered marker for new question
+        Object.values(this.players).forEach((p) => {
+          p.answeredForQIndex = -1;
+          p.lastFeedback = null;
+        });
+
+        // Pick a master question display for teacher projector preview
+        this.currentMasterQuestion = this.questionsPool[qIdx % this.questionsPool.length];
+        this.renderTeacherQuestionPreview();
+        this.renderRaceArena();
+
+        // Send personalized shuffled question to each student
+        Object.values(this.players).forEach((p) => {
+          this.sendQuestionToPlayer(p, qIdx, QUESTION_INTERVAL);
+        });
+
+        this.startTimerLoop();
+      },
+
+      sendQuestionToPlayer(player, qIdx, msLeft) {
+        if (!player.deck || player.deck.length === 0) {
+          player.deck = this.buildShuffledDeckForPlayer();
+        }
+        const qItem = player.deck[qIdx % player.deck.length];
+        const alreadyAnswered = player.answeredForQIndex === qIdx;
+
+        this.sendToPlayer(player, {
+          type: "QUESTION",
+          qIndex: qIdx,
+          qNumber: qIdx + 1,
+          question: qItem.q,
+          options: qItem.options,
+          durationMs: QUESTION_INTERVAL,
+          remainingMs: Math.max(0, msLeft),
+          paused: this.gameStatus === "paused",
+          alreadyAnswered,
+          lastFeedback: alreadyAnswered ? player.lastFeedback : null
+        });
+      },
+
+      startTimerLoop() {
+        this.stopTimerLoop();
+        this.tickInterval = setInterval(() => {
+          if (this.gameStatus !== "playing") return;
+
+          const now = performance.now();
+          const elapsed = now - this.questionStartTime;
+          this.remainingMs = Math.max(0, QUESTION_INTERVAL - elapsed);
+
+          const secCeil = Math.ceil(this.remainingMs / 1000);
+          document.getElementById("race-countdown-text").textContent = `${(this.remainingMs / 1000).toFixed(1)}s`;
+
+          if (secCeil !== this.lastCountdownSecond && secCeil <= 3 && secCeil > 0) {
+            this.lastCountdownSecond = secCeil;
+            soundFX.playTick();
+          }
+
+          // Broadcast periodic timer sync every ~250ms
+          this.broadcast({
+            type: "TIMER_SYNC",
+            qIndex: this.questionIndex,
+            remainingMs: this.remainingMs,
+            paused: false
+          });
+
+          if (this.remainingMs <= 0) {
+            // Time's up for current question -> count unanswered students as wrong (stuck in place)
+            this.finalizeUnansweredForCurrentQuestion();
+            this.launchQuestionCycle(this.questionIndex + 1);
+          }
+        }, 100);
+      },
+
+      stopTimerLoop() {
+        if (this.tickInterval) {
+          clearInterval(this.tickInterval);
+          this.tickInterval = null;
+        }
+      },
+
+      finalizeUnansweredForCurrentQuestion() {
+        Object.values(this.players).forEach((p) => {
+          if (p.answeredForQIndex !== this.questionIndex) {
+            p.answeredForQIndex = this.questionIndex;
+            p.wrong += 1;
+            p.lastFeedback = {
+              correct: false,
+              reason: "timeout",
+              message: "⏰ Waktu habis! Ayam tetap di tempat."
+            };
+          }
+        });
+      },
+
+      handleStudentAnswer(conn, msg) {
+        if (this.gameStatus !== "playing") return;
+        const player = Object.values(this.players).find((p) => p.peerId === conn.peer);
+        if (!player) return;
+
+        // Ignore if already answered this question or stale question index
+        if (msg.qIndex !== this.questionIndex || player.answeredForQIndex === this.questionIndex) {
+          return;
+        }
+
+        const qItem = player.deck[this.questionIndex % player.deck.length];
+        const chosenIdx = Number(msg.optionIndex);
+        const isCorrect = chosenIdx === qItem.answer;
+
+        player.answeredForQIndex = this.questionIndex;
+
+        if (isCorrect) {
+          player.correct += 1;
+          player.steps = Math.min(TRACK_LENGTH, player.steps + 1);
+          player.lastFeedback = {
+            correct: true,
+            hop: true,
+            message: "✅ Benar! Ayam maju 1 langkah!"
+          };
+        } else {
+          player.wrong += 1;
+          player.lastFeedback = {
+            correct: false,
+            hop: false,
+            message: "❌ Kurang tepat! Ayam tetap di tempat."
+          };
+        }
+
+        // Send immediate feedback & updated stats to this student
+        this.sendToPlayer(player, {
+          type: "ANSWER_RESULT",
+          qIndex: this.questionIndex,
+          correct: isCorrect,
+          steps: player.steps,
+          trackLength: TRACK_LENGTH,
+          correctCount: player.correct,
+          wrongCount: player.wrong,
+          message: player.lastFeedback.message
+        });
+
+        this.renderRaceArena();
+        this.broadcastPositions();
+
+        // Check if any chicken reached finish line
+        if (player.steps >= TRACK_LENGTH && !this.winnerDeclared) {
+          this.winnerDeclared = true;
+          this.finishGame(`${player.name} mencapai garis finish terlebih dahulu!`);
+        }
+      },
+
+      broadcastPositions() {
+        const ranked = computeRankedPlayers(this.players).map((p) => ({
+          id: p.id,
+          name: p.name,
+          paletteIndex: p.paletteIndex,
+          steps: p.steps,
+          correct: p.correct,
+          wrong: p.wrong,
+          accuracy: p.accuracy,
+          rank: p.rank,
+          connected: p.connected
+        }));
+
+        this.broadcast({
+          type: "POSITIONS_UPDATE",
+          players: ranked,
+          trackLength: TRACK_LENGTH
+        });
+      },
+
+      togglePause() {
+        if (this.gameStatus === "playing") {
+          this.gameStatus = "paused";
+          this.remainingMs = Math.max(0, QUESTION_INTERVAL - (performance.now() - this.questionStartTime));
+          this.stopTimerLoop();
+          document.getElementById("teacher-pause-btn").textContent = "▶️ Lanjutkan";
+          document.getElementById("teacher-paused-banner").classList.remove("hidden");
+          this.broadcast({
+            type: "GAME_PAUSED",
+            paused: true,
+            remainingMs: this.remainingMs
+          });
+          showToast("Permainan dijeda.", "warning");
+        } else if (this.gameStatus === "paused") {
+          this.gameStatus = "playing";
+          this.questionStartTime = performance.now() - (QUESTION_INTERVAL - this.remainingMs);
+          document.getElementById("teacher-pause-btn").textContent = "⏸️ Jeda";
+          document.getElementById("teacher-paused-banner").classList.add("hidden");
+          this.broadcast({
+            type: "GAME_PAUSED",
+            paused: false,
+            remainingMs: this.remainingMs
+          });
+          this.startTimerLoop();
+          showToast("Permainan dilanjutkan!", "success");
+        }
+      },
+
+      confirmEndGame() {
+        showConfirmModal(
+          "Akhiri Balapan Sekarang?",
+          "Permainan akan dihentikan dan hasil akhir beserta peringkat akan ditampilkan.",
+          () => this.finishGame("Permainan diakhiri oleh guru.")
+        );
+      },
+
+      finishGame(reasonText = "Balapan selesai!") {
+        this.gameStatus = "finished";
+        this.stopTimerLoop();
+
+        const ranked = computeRankedPlayers(this.players);
+        this.broadcast({
+          type: "GAME_OVER",
+          reason: reasonText,
+          players: ranked
+        });
+
+        soundFX.playVictory();
+        renderResultsView(ranked, reasonText, true);
+        app.showView("view-results");
+      },
+
+      renderTeacherQuestionPreview() {
+        const q = this.currentMasterQuestion;
+        if (!q) return;
+        document.getElementById("race-q-index").textContent = String(this.questionIndex + 1);
+        document.getElementById("race-question-text").textContent = q.q;
+
+        const letters = ["A", "B", "C", "D"];
+        document.getElementById("race-options-preview").innerHTML = q.options
+          .map(
+            (opt, i) => `
+            <div class="px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/15 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-amber-400 text-stone-950 font-extrabold flex items-center justify-center flex-shrink-0 text-xs">${letters[i]}</span>
+              <span class="font-semibold text-white/95 line-clamp-2">${this.escapeHTML(opt)}</span>
+            </div>
+          `
+          )
+          .join("");
+      },
+
+      renderRaceArena() {
+        const ranked = computeRankedPlayers(this.players);
+        const answeredCount = Object.values(this.players).filter(
+          (p) => p.answeredForQIndex === this.questionIndex
+        ).length;
+        document.getElementById("race-answered-stat").textContent =
+          `${answeredCount} / ${ranked.length} siswa menjawab soal ini`;
+
+        const trackEl = document.getElementById("race-track-container");
+        const lbEl = document.getElementById("race-leaderboard-list");
+
+        if (ranked.length === 0) {
+          trackEl.innerHTML = `<div class="text-center py-10 text-stone-400 font-semibold">Belum ada pemain di lintasan.</div>`;
+          lbEl.innerHTML = `<div class="text-center py-8 text-stone-400 text-sm">Menunggu pemain...</div>`;
+          return;
+        }
+
+        // Render lanes
+        trackEl.innerHTML = ranked
+          .map((p) => {
+            const pct = Math.min(100, Math.max(0, (p.steps / TRACK_LENGTH) * 100));
+            const isHopping = p.answeredForQIndex === this.questionIndex && p.lastFeedback && p.lastFeedback.hop;
+            return `
+              <div class="relative h-14 rounded-2xl bg-emerald-600/90 grass-lane border-2 border-emerald-800/40 flex items-center px-2 overflow-hidden">
+                <!-- Step markers -->
+                <div class="absolute inset-y-0 left-12 right-12 flex justify-between pointer-events-none opacity-25">
+                  ${Array.from({ length: TRACK_LENGTH })
+                    .map(() => `<div class="w-px h-full bg-white"></div>`)
+                    .join("")}
+                </div>
+
+                <!-- Player Name Tag on Left -->
+                <div class="relative z-10 w-24 sm:w-28 flex-shrink-0 bg-barn-dark/85 text-white px-2 py-1 rounded-xl text-xs font-bold truncate">
+                  #${p.rank} ${this.escapeHTML(p.name)}
+                </div>
+
+                <!-- Track Lane Space -->
+                <div class="relative flex-1 h-full mx-1 flex items-center">
+                  <div
+                    class="absolute transition-all duration-300 ease-out flex items-center gap-1 ${isHopping ? "animate-chicken-hop" : "animate-chicken-idle"}"
+                    style="left: calc(${pct}% - 22px);"
+                  >
+                    <div class="w-11 h-11">${createChickenSVG(p.paletteIndex, true)}</div>
+                    <span class="px-1.5 py-0.5 rounded-md bg-white/95 text-stone-900 font-extrabold text-[10px] shadow">
+                      ${p.steps}/${TRACK_LENGTH}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Checkered Finish Strip -->
+                <div class="relative z-10 w-8 h-full rounded-r-xl finish-line-pattern border-l-2 border-amber-300 flex items-center justify-center flex-shrink-0">
+                  <span class="bg-amber-400 text-stone-950 text-[10px] font-black px-1 rounded">🏁</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        // Render live leaderboard
+        lbEl.innerHTML = ranked
+          .map((p) => {
+            const medal = p.rank === 1 ? "🥇" : p.rank === 2 ? "🥈" : p.rank === 3 ? "🥉" : `#${p.rank}`;
+            return `
+              <div class="flex items-center justify-between gap-2 p-2.5 rounded-2xl ${p.rank <= 3 ? "bg-amber-50 border border-amber-300" : "bg-stone-50 border border-stone-200"}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="font-display font-bold text-base w-7 text-center flex-shrink-0">${medal}</span>
+                  <div class="w-9 h-9 flex-shrink-0">${createChickenSVG(p.paletteIndex, true)}</div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-sm text-stone-900 truncate">${this.escapeHTML(p.name)}</div>
+                    <div class="text-[11px] text-stone-500 font-semibold">
+                      ✅ ${p.correct} • ❌ ${p.wrong} • Akurasi ${p.accuracy}%
+                    </div>
+                  </div>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <div class="font-display font-bold text-base text-emerald-700">${p.steps}</div>
+                  <div class="text-[10px] font-bold text-stone-400">LANGKAH</div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      },
+
+      downloadCSV() {
+        const ranked = computeRankedPlayers(this.players);
+        const headers = ["Peringkat", "Nama", "Langkah", "Benar", "Salah", "Akurasi (%)"];
+        const rows = ranked.map((p) => [
+          p.rank,
+          `"${String(p.name).replace(/"/g, '""')}"`,
+          p.steps,
+          p.correct,
+          p.wrong,
+          p.accuracy
+        ]);
+
+        const csvContent =
+          "\uFEFF" + // UTF-8 BOM for Excel compatibility
+          [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Hasil_Balapan_Ayam_${this.roomCode}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        showToast("File CSV hasil balapan berhasil diunduh!", "success");
+      },
+
+      escapeHTML(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      },
+
+      cleanup() {
+        this.stopTimerLoop();
+        this.connections.forEach((conn) => {
+          try {
+            conn.close();
+          } catch (e) {}
+        });
+        this.connections.clear();
+        if (this.peer) {
+          try {
+            this.peer.destroy();
+          } catch (e) {}
+          this.peer = null;
+        }
+        this.players = {};
+        this.gameStatus = "lobby";
+      }
+    };
+
+    /**
+     * =========================================================================
+     * 6. STUDENT CLIENT ENGINE (Join, Reconnect, 10s Timer, Instant Feedback)
+     * =========================================================================
+     */
+    const student = {
+      peer: null,
+      conn: null,
+      roomCode: "",
+      playerName: "",
+      playerInfo: null,
+      currentQIndex: -1,
+      answeredCurrentQ: false,
+      remainingMs: QUESTION_INTERVAL,
+      paused: false,
+      uiTimerInterval: null,
+      lastTickSec: null,
+
+      openJoin() {
+        this.cleanup();
+        app.role = "student";
+        document.getElementById("home-btn").classList.remove("hidden");
+        app.showView("view-student-join");
+      },
+
+      submitJoin(event) {
+        event.preventDefault();
+        const codeInput = document.getElementById("student-code-input");
+        const nameInput = document.getElementById("student-name-input");
+
+        const code = codeInput.value.trim().toUpperCase();
+        const name = nameInput.value.trim().replace(/\s+/g, " ");
+
+        if (!/^[A-Z0-9]{6}$/.test(code)) {
+          showToast("Kode ruangan harus terdiri dari 6 karakter huruf/angka.", "warning");
+          codeInput.focus();
+          return;
+        }
+
+        if (name.length < 2) {
+          showToast("Nama panggilan minimal 2 karakter.", "warning");
+          nameInput.focus();
+          return;
+        }
+
+        this.roomCode = code;
+        this.playerName = name;
+        this.connectToHost();
+      },
+
+      connectToHost() {
+        if (typeof Peer === "undefined") {
+          showToast("Gagal memuat PeerJS. Periksa koneksi internet.", "error");
+          return;
+        }
+
+        const joinBtn = document.getElementById("student-join-btn");
+        joinBtn.disabled = true;
+        joinBtn.textContent = "Menghubungkan...";
+
+        if (this.peer) {
+          try {
+            this.peer.destroy();
+          } catch (e) {}
+        }
+
+        this.peer = new Peer(undefined, { debug: 0 });
+
+        this.peer.on("open", () => {
+          const hostId = ROOM_PREFIX + this.roomCode;
+          const conn = this.peer.connect(hostId, { reliable: true });
+          this.conn = conn;
+
+          const connectTimeout = setTimeout(() => {
+            if (!this.conn || !this.conn.open) {
+              joinBtn.disabled = false;
+              joinBtn.textContent = "🚪 Masuk Ruang Tunggu";
+              showToast("Ruangan tidak ditemukan atau guru belum mengaktifkan ruangan.", "error");
+            }
+          }, 8000);
+
+          conn.on("open", () => {
+            clearTimeout(connectTimeout);
+            conn.send({
+              type: "JOIN",
+              name: this.playerName
+            });
+          });
+
+          conn.on("data", (msg) => {
+            this.handleHostMessage(msg);
+          });
+
+          conn.on("close", () => {
+            app.setConnectionBadge("Terputus", "bg-rose-900 text-rose-200 border-rose-600");
+            if (app.role === "student" && app.currentView !== "view-results" && app.currentView !== "view-student-join") {
+              showToast("Koneksi terputus. Mencoba menyambung kembali...", "warning");
+              setTimeout(() => {
+                if (app.role === "student" && this.roomCode && this.playerName) {
+                  this.connectToHost();
+                }
+              }, 2000);
+            }
+          });
+
+          conn.on("error", () => {
+            clearTimeout(connectTimeout);
+            joinBtn.disabled = false;
+            joinBtn.textContent = "🚪 Masuk Ruang Tunggu";
+            showToast("Gagal terhubung ke ruangan guru.", "error");
+          });
+        });
+
+        this.peer.on("error", () => {
+          joinBtn.disabled = false;
+          joinBtn.textContent = "🚪 Masuk Ruang Tunggu";
+          showToast("Terjadi gangguan jaringan PeerJS.", "error");
+        });
+      },
+
+      handleHostMessage(msg) {
+        if (!msg || typeof msg !== "object") return;
+        const joinBtn = document.getElementById("student-join-btn");
+
+        if (msg.type === "JOIN_REJECTED") {
+          joinBtn.disabled = false;
+          joinBtn.textContent = "🚪 Masuk Ruang Tunggu";
+          showToast(msg.reason || "Gagal masuk ruangan.", "error");
+          return;
+        }
+
+        if (msg.type === "JOIN_ACCEPTED") {
+          joinBtn.disabled = false;
+          joinBtn.textContent = "🚪 Masuk Ruang Tunggu";
+          this.playerInfo = msg.player;
+          app.setConnectionBadge(`Ruang: ${this.roomCode}`);
+
+          document.getElementById("student-waiting-name").textContent = this.playerInfo.name;
+          document.getElementById("student-waiting-code").textContent = this.roomCode;
+          document.getElementById("student-waiting-chicken").innerHTML = createChickenSVG(
+            this.playerInfo.paletteIndex,
+            true
+          );
+
+          if (msg.gameStatus === "lobby") {
+            app.showView("view-student-waiting");
+            showToast(`Selamat datang, ${this.playerInfo.name}!`, "success");
+          } else {
+            this.setupGameHUD();
+            app.showView("view-student-game");
+            showToast("Terhubung kembali ke balapan!", "success");
+          }
+          return;
+        }
+
+        if (msg.type === "LOBBY_UPDATE") {
+          this.renderWaitingLobbyList(msg.players || []);
+          return;
+        }
+
+        if (msg.type === "GAME_START") {
+          this.setupGameHUD();
+          app.showView("view-student-game");
+          soundFX.playStart();
+          return;
+        }
+
+        if (msg.type === "QUESTION") {
+          this.renderQuestion(msg);
+          return;
+        }
+
+        if (msg.type === "TIMER_SYNC") {
+          this.remainingMs = msg.remainingMs;
+          this.paused = !!msg.paused;
+          return;
+        }
+
+        if (msg.type === "GAME_PAUSED") {
+          this.paused = !!msg.paused;
+          this.remainingMs = msg.remainingMs;
+          document.getElementById("student-paused-banner").classList.toggle("hidden", !this.paused);
+          return;
+        }
+
+        if (msg.type === "ANSWER_RESULT") {
+          this.handleAnswerResult(msg);
+          return;
+        }
+
+        if (msg.type === "POSITIONS_UPDATE") {
+          this.updateOwnPositionFromRanking(msg.players || []);
+          return;
+        }
+
+        if (msg.type === "GAME_OVER") {
+          this.stopUITimer();
+          soundFX.playVictory();
+          renderResultsView(msg.players || [], msg.reason || "Permainan selesai!", false);
+          app.showView("view-results");
+        }
+      },
+
+      renderWaitingLobbyList(players) {
+        document.getElementById("student-lobby-count").textContent = String(players.length);
+        const listEl = document.getElementById("student-lobby-list");
+        listEl.innerHTML = players
+          .map(
+            (p) => `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-emerald-200 text-xs font-bold text-stone-800 shadow-2xs">
+              <span class="w-4 h-4 inline-block">${createChickenSVG(p.paletteIndex, true)}</span>
+              ${teacher.escapeHTML(p.name)}
+            </span>
+          `
+          )
+          .join("");
+      },
+
+      setupGameHUD() {
+        if (!this.playerInfo) return;
+        document.getElementById("student-hud-name").textContent = this.playerInfo.name;
+        document.getElementById("student-hud-chicken").innerHTML = createChickenSVG(
+          this.playerInfo.paletteIndex,
+          true
+        );
+        document.getElementById("student-mini-avatar").innerHTML = createChickenSVG(
+          this.playerInfo.paletteIndex,
+          true
+        );
+        this.updateOwnStepVisuals(this.playerInfo.steps || 0);
+      },
+
+      updateOwnPositionFromRanking(rankedPlayers) {
+        if (!this.playerInfo) return;
+        const me = rankedPlayers.find((p) => p.id === this.playerInfo.id);
+        if (me) {
+          document.getElementById("student-rank-text").textContent = String(me.rank);
+          this.updateOwnStepVisuals(me.steps);
+        }
+      },
+
+      updateOwnStepVisuals(steps) {
+        const clamped = Math.min(TRACK_LENGTH, Math.max(0, steps));
+        const pct = (clamped / TRACK_LENGTH) * 100;
+        document.getElementById("student-step-text").textContent = String(clamped);
+        document.getElementById("student-mini-progress").style.width = `${pct}%`;
+        document.getElementById("student-mini-avatar").style.left = `calc(${pct}% - 14px)`;
+      },
+
+      renderQuestion(msg) {
+        this.currentQIndex = msg.qIndex;
+        this.remainingMs = msg.remainingMs;
+        this.paused = !!msg.paused;
+        this.answeredCurrentQ = !!msg.alreadyAnswered;
+        this.lastTickSec = null;
+
+        document.getElementById("student-paused-banner").classList.toggle("hidden", !this.paused);
+        document.getElementById("student-q-num").textContent = String(msg.qNumber);
+        document.getElementById("student-question-text").textContent = msg.question;
+
+        const feedbackBox = document.getElementById("student-feedback-box");
+        const card = document.getElementById("student-question-card");
+        card.classList.remove("animate-wrong-shake");
+
+        if (this.answeredCurrentQ && msg.lastFeedback) {
+          this.showFeedbackBanner(msg.lastFeedback.correct, msg.lastFeedback.message);
+        } else {
+          feedbackBox.classList.add("hidden");
+        }
+
+        const letters = ["A", "B", "C", "D"];
+        const btnColors = [
+          "bg-rose-500 hover:bg-rose-600 text-white shadow-[0_5px_0_#9f1239]",
+          "bg-sky-500 hover:bg-sky-600 text-white shadow-[0_5px_0_#075985]",
+          "bg-amber-400 hover:bg-amber-500 text-stone-950 shadow-[0_5px_0_#b45309]",
+          "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_5px_0_#065f46]"
+        ];
+
+        const grid = document.getElementById("student-options-grid");
+        grid.innerHTML = msg.options
+          .map(
+            (opt, idx) => `
+            <button
+              id="opt-btn-${idx}"
+              onclick="student.chooseOption(${idx})"
+              ${this.answeredCurrentQ ? "disabled" : ""}
+              class="btn-3d w-full min-h-[72px] p-4 rounded-2xl ${btnColors[idx % btnColors.length]} flex items-center gap-3 text-left font-bold text-sm sm:text-base"
+            >
+              <span class="w-9 h-9 rounded-xl bg-black/20 flex items-center justify-center font-display text-lg font-bold flex-shrink-0">
+                ${letters[idx]}
+              </span>
+              <span class="leading-snug">${teacher.escapeHTML(opt)}</span>
+            </button>
+          `
+          )
+          .join("");
+
+        this.startUITimer();
+      },
+
+      chooseOption(optionIndex) {
+        if (this.answeredCurrentQ || this.paused) return;
+        if (!this.conn || !this.conn.open) {
+          showToast("Koneksi ke guru belum aktif.", "warning");
+          return;
+        }
+
+        this.answeredCurrentQ = true;
+        // Lock all 4 option buttons immediately until next question
+        for (let i = 0; i < 4; i++) {
+          const btn = document.getElementById(`opt-btn-${i}`);
+          if (btn) {
+            btn.disabled = true;
+            if (i !== optionIndex) {
+              btn.classList.add("opacity-45");
+            } else {
+              btn.classList.add("ring-4", "ring-stone-950");
+            }
+          }
+        }
+
+        this.conn.send({
+          type: "ANSWER",
+          qIndex: this.currentQIndex,
+          optionIndex
+        });
+      },
+
+      handleAnswerResult(msg) {
+        if (msg.qIndex !== this.currentQIndex) return;
+
+        this.updateOwnStepVisuals(msg.steps);
+        this.showFeedbackBanner(msg.correct, msg.message);
+
+        const avatar = document.getElementById("student-mini-avatar");
+        const card = document.getElementById("student-question-card");
+
+        if (msg.correct) {
+          soundFX.playCorrect();
+          avatar.classList.remove("animate-chicken-hop");
+          void avatar.offsetWidth;
+          avatar.classList.add("animate-chicken-hop");
+        } else {
+          soundFX.playWrong();
+          card.classList.remove("animate-wrong-shake");
+          void card.offsetWidth;
+          card.classList.add("animate-wrong-shake");
+        }
+      },
+
+      showFeedbackBanner(isCorrect, text) {
+        const box = document.getElementById("student-feedback-box");
+        box.classList.remove("hidden", "bg-emerald-100", "text-emerald-900", "border-emerald-400", "bg-rose-100", "text-rose-900", "border-rose-400");
+        if (isCorrect) {
+          box.classList.add("bg-emerald-100", "text-emerald-900", "border-emerald-400");
+        } else {
+          box.classList.add("bg-rose-100", "text-rose-900", "border-rose-400");
+        }
+        box.textContent = text;
+      },
+
+      startUITimer() {
+        this.stopUITimer();
+        this.uiTimerInterval = setInterval(() => {
+          if (!this.paused) {
+            this.remainingMs = Math.max(0, this.remainingMs - 100);
+          }
+          const pct = Math.max(0, Math.min(100, (this.remainingMs / QUESTION_INTERVAL) * 100));
+          document.getElementById("student-timer-bar").style.width = `${pct}%`;
+          document.getElementById("student-timer-num").textContent = `${(this.remainingMs / 1000).toFixed(1)}s`;
+
+          const sec = Math.ceil(this.remainingMs / 1000);
+          if (sec !== this.lastTickSec && sec <= 3 && sec > 0 && !this.paused) {
+            this.lastTickSec = sec;
+            soundFX.playTick();
+          }
+
+          if (this.remainingMs <= 0 && !this.answeredCurrentQ) {
+            this.answeredCurrentQ = true;
+            for (let i = 0; i < 4; i++) {
+              const btn = document.getElementById(`opt-btn-${i}`);
+              if (btn) btn.disabled = true;
+            }
+            this.showFeedbackBanner(false, "⏰ Waktu habis! Ayam tetap di tempat.");
+            soundFX.playWrong();
+          }
+        }, 100);
+      },
+
+      stopUITimer() {
+        if (this.uiTimerInterval) {
+          clearInterval(this.uiTimerInterval);
+          this.uiTimerInterval = null;
+        }
+      },
+
+      cleanup() {
+        this.stopUITimer();
+        if (this.conn) {
+          try {
+            this.conn.close();
+          } catch (e) {}
+          this.conn = null;
+        }
+        if (this.peer) {
+          try {
+            this.peer.destroy();
+          } catch (e) {}
+          this.peer = null;
+        }
+        this.playerInfo = null;
+        this.currentQIndex = -1;
+        this.answeredCurrentQ = false;
+      }
+    };
+
+    /**
+     * =========================================================================
+     * 7. RESULTS, TOP-3 PODIUM & CONFETTI RENDERER
+     * =========================================================================
+     */
+    function renderResultsView(rankedPlayers, reasonText, isTeacher) {
+      document.getElementById("results-subtitle").textContent = reasonText;
+      document.getElementById("download-csv-btn").classList.toggle("hidden", !isTeacher);
+
+      launchConfetti();
+
+      const podiumEl = document.getElementById("podium-container");
+      const top1 = rankedPlayers[0] || null;
+      const top2 = rankedPlayers[1] || null;
+      const top3 = rankedPlayers[2] || null;
+
+      // Order visually as: 2nd (left), 1st (center tallest), 3rd (right)
+      const podiumSlots = [
+        { player: top2, place: 2, medal: "🥈", heightClass: "md:h-56", badgeBg: "bg-slate-200 text-slate-900", border: "border-slate-300" },
+        { player: top1, place: 1, medal: "🥇", heightClass: "md:h-68", badgeBg: "bg-amber-400 text-stone-950", border: "border-amber-300" },
+        { player: top3, place: 3, medal: "🥉", heightClass: "md:h-52", badgeBg: "bg-orange-300 text-stone-950", border: "border-orange-200" }
+      ];
+
+      podiumEl.innerHTML = podiumSlots
+        .map((slot) => {
+          if (!slot.player) {
+            return `
+              <div class="bg-white/10 border border-white/15 rounded-3xl p-5 flex flex-col items-center justify-center ${slot.heightClass} opacity-60">
+                <div class="text-2xl mb-1">${slot.medal}</div>
+                <div class="text-xs font-bold">Peringkat #${slot.place} Kosong</div>
+              </div>
+            `;
+          }
+          const p = slot.player;
+          return `
+            <div class="bg-white text-stone-900 rounded-3xl p-5 border-4 ${slot.border} shadow-2xl flex flex-col items-center justify-between ${slot.heightClass}">
+              <span class="px-3 py-1 rounded-full ${slot.badgeBg} font-display font-bold text-xs uppercase">
+                ${slot.medal} Juara ${slot.place}
+              </span>
+              <div class="w-20 h-20 my-1 animate-chicken-hop">${createChickenSVG(p.paletteIndex, true)}</div>
+              <div class="font-display text-xl font-bold truncate max-w-full">${teacher.escapeHTML(p.name)}</div>
+              <div class="text-xs font-bold text-stone-600 mt-1">
+                ${p.steps}/${TRACK_LENGTH} Langkah • Akurasi ${p.accuracy}%
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      // Full table rows
+      const tbody = document.getElementById("results-table-body");
+      if (rankedPlayers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-stone-400">Tidak ada data pemain.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rankedPlayers
+        .map(
+          (p) => `
+          <tr class="hover:bg-emerald-50/50">
+            <td class="py-3 px-3 font-display font-bold text-base">#${p.rank}</td>
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 flex-shrink-0">${createChickenSVG(p.paletteIndex, true)}</div>
+                <span class="font-bold text-stone-900">${teacher.escapeHTML(p.name)}</span>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-center font-bold text-emerald-700">${p.steps} / ${TRACK_LENGTH}</td>
+            <td class="py-3 px-3 text-center font-bold text-green-700">${p.correct}</td>
+            <td class="py-3 px-3 text-center font-bold text-rose-600">${p.wrong}</td>
+            <td class="py-3 px-3 text-right font-extrabold text-stone-900">${p.accuracy}%</td>
+          </tr>
+        `
+        )
+        .join("");
+    }
+
+    function launchConfetti() {
+      const layer = document.getElementById("confetti-layer");
+      layer.innerHTML = "";
+      const colors = ["#fbbf24", "#34d399", "#60a5fa", "#f472b6", "#fb7185", "#a78bfa"];
+      for (let i = 0; i < 55; i++) {
+        const piece = document.createElement("div");
+        piece.className = "confetti-piece rounded-sm";
+        const left = Math.random() * 100;
+        const size = 7 + Math.random() * 8;
+        const duration = 2.4 + Math.random() * 2.5;
+        const delay = Math.random() * 1.2;
+        piece.style.left = `${left}vw`;
+        piece.style.width = `${size}px`;
+        piece.style.height = `${size * 1.4}px`;
+        piece.style.backgroundColor = colors[i % colors.length];
+        piece.style.animationDuration = `${duration}s`;
+        piece.style.animationDelay = `${delay}s`;
+        layer.appendChild(piece);
+      }
+      setTimeout(() => {
+        layer.innerHTML = "";
+      }, 6000);
+    }
+
+    // Initialize app on load
+    window.addEventListener("DOMContentLoaded", () => {
+      app.init();
+    });
+  </script>
+</body>
+</html>
